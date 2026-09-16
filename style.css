@@ -1,3 +1,4 @@
+Apni style.css file mein yeh naye styles end mein add karein (ya poori file replace kar lein):
 * {
     box-sizing: border-box;
     margin: 0;
@@ -17,17 +18,32 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 20px;
+    padding: 8px 20px;
     background-color: #252526;
     border-bottom: 1px solid #333;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.badge {
+    font-size: 11px;
+    background-color: #1b4b27;
+    color: #4ec9b0;
+    padding: 3px 8px;
+    border-radius: 12px;
+    border: 1px solid #2ea043;
 }
 
 #run-btn {
     background-color: #0e639c;
     color: white;
     border: none;
-    padding: 8px 18px;
-    font-size: 14px;
+    padding: 6px 14px;
+    font-size: 13px;
     border-radius: 4px;
     cursor: pointer;
     font-weight: bold;
@@ -41,7 +57,7 @@ body {
 .container {
     display: flex;
     flex: 1;
-    height: calc(100vh - 55px);
+    height: calc(100vh - 75px);
 }
 
 .editor-box, .output-box {
@@ -53,11 +69,37 @@ body {
 
 .box-header {
     background-color: #2d2d2d;
-    padding: 8px 15px;
-    font-size: 13px;
+    padding: 6px 15px;
+    font-size: 12px;
     color: #cccccc;
     text-transform: uppercase;
     letter-spacing: 1px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.lang-tag {
+    font-size: 10px;
+    color: #ce9178;
+    background: #1e1e1e;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+.clear-btn {
+    background: transparent;
+    border: 1px solid #444;
+    color: #aaa;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.clear-btn:hover {
+    color: white;
+    border-color: #666;
 }
 
 #editor {
@@ -73,4 +115,16 @@ body {
     font-size: 14px;
     overflow-y: auto;
     white-space: pre-wrap;
+}
+
+/* Status Bar Style */
+.status-bar {
+    height: 22px;
+    background-color: #007acc;
+    color: white;
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 15px;
 }
