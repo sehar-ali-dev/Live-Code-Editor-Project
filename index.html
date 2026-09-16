@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VibeCode - Live Python Online Editor</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Monaco Editor CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.min.js"></script>
+    <!-- Updated Fast Pyodide CDN (v0.24.1) -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+</head>
+<body>
+    <header class="navbar">
+        <h2>⚡ VibeCode Python Studio</h2>
+        <button id="run-btn" onclick="runPythonCode()">▶ Run Code</button>
+    </header>
+
+    <main class="container">
+        <!-- Editor Section -->
+        <div class="editor-box">
+            <div class="box-header">Python Source Code</div>
+            <div id="editor"></div>
+        </div>
+
+        <!-- Terminal Output Section -->
+        <div class="output-box">
+            <div class="box-header">Live Output Terminal</div>
+            <pre id="output">Initializing Python Engine (Pyodide)... Please wait.</pre>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
