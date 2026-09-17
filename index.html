@@ -28,8 +28,33 @@
             </select>
         </div>
 
+        <!-- Theme Selector Dropdown -->
+        <div class="theme-picker">
+            <label for="theme-select">Theme:</label>
+            <select id="theme-select" onchange="changeTheme()">
+                <option value="vs-dark">🌙 VS Dark</option>
+                <option value="vs-light">☀️ VS Light</option>
+                <option value="hc-black">⚫ High Contrast</option>
+            </select>
+        </div>
+
+        <!-- Font Size Selector -->
+        <div class="font-size-picker">
+            <label for="font-size-select">Font Size:</label>
+            <select id="font-size-select" onchange="changeFontSize()">
+                <option value="12">12px</option>
+                <option value="14" selected>14px</option>
+                <option value="18">18px</option>
+                <option value="20">20px</option>
+            </select>
+        </div>
+
         <div class="header-actions">
             <span id="auto-status" class="badge">⚡ Auto-Run: ON</span>
+            <button id="import-btn" onclick="document.getElementById('file-input').click()">📂 Import</button>
+            <input type="file" id="file-input" accept=".py,.html,.cpp,.java,.js,.txt" style="display: none;" onchange="handleFileImport(event)">
+            <button id="download-btn" onclick="downloadCode()">💾 Download</button>
+            <button id="share-btn" onclick="shareCode()">🔗 Share</button>
             <button id="run-btn" onclick="runCode()">▶ Manual Run</button>
         </div>
     </header>
@@ -39,8 +64,19 @@
         <div class="editor-box">
             <div class="box-header">
                 <span>Source Code</span>
-                <span id="lang-tag" class="lang-tag">PYTHON</span>
+                <div class="box-header-actions">
+                    <span id="lang-tag" class="lang-tag">PYTHON</span>
+                    <button class="format-btn" onclick="formatCode()">✨ Format</button>
+                </div>
             </div>
+            
+            <!-- HTML Multi-Tab Sub-Tabs (shown only in HTML mode) -->
+            <div id="html-tabs" class="html-tabs" style="display: none;">
+                <button class="html-tab active" data-tab="html" onclick="switchHtmlTab('html')">index.html</button>
+                <button class="html-tab" data-tab="css" onclick="switchHtmlTab('css')">style.css</button>
+                <button class="html-tab" data-tab="js" onclick="switchHtmlTab('js')">script.js</button>
+            </div>
+            
             <div id="editor"></div>
         </div>
 

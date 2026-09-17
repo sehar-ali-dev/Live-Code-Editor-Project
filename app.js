@@ -2,6 +2,12 @@ let editor = null;
 let pyodide = null;
 let debounceTimer = null;
 let isSwitchingLanguage = false;
+let currentHtmlTab = 'html';
+let htmlTabContents = {
+    html: '',
+    css: '',
+    js: ''
+};
 
 // Starter Code Templates for All Languages
 const codeTemplates = {
@@ -43,16 +49,411 @@ function clearTerminal() {
     updateStatus("🧹 Cleared", "#007acc");
 }
 
+// File Management Functions
+function downloadCode() {
+    if (!editor) return;
+    
+    const code = editor.getValue();
+    const selectedLang = document.getElementById('language-select').value;
+    
+    const extensionMap = {
+        'python': '.py',
+        'html': '.html',
+        'cpp': '.cpp',
+        'java': '.java',
+        'javascript': '.js'
+    };
+    
+    const extension = extensionMap[selectedLang] || '.txt';
+    const filename = `vibecode_code${extension}`;
+    
+    const blob = new Blob([code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    updateStatus("📥 Code Downloaded", "#007acc");
+}
+
+function handleFileImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const content = e.target.result;
+        
+        // Auto-detect language from file extension
+        const filename = file.name.toLowerCase();
+        const extensionMap = {
+            '.py': 'python',
+            '.html': 'html',
+            '.htm': 'html',
+            '.css': 'css',
+            '.js': 'javascript',
+            '.cpp': 'cpp',
+            '.cc': 'cpp',
+            '.cxx': 'cpp',
+            '.java': 'java'
+        };
+        
+        let detectedLang = null;
+        for (const [ext, lang] of Object.entries(extensionMap)) {
+            if (filename.endsWith(ext)) {
+                detectedLang = lang;
+                break;
+            }
+        }
+        
+        if (detectedLang) {
+            // Special handling for HTML/CSS/JS files for multi-tab
+            if (detectedLang === 'html') {
+                htmlTabContents.html = content;
+                htmlTabContents.css = '';
+                htmlTabContents.js = '';
+            } else if (detectedLang === 'css') {
+                htmlTabContents.css = content;
+                htmlTabContents.html = '';
+                htmlTabContents.js = '';
+            } else if (detectedLang === 'javascript') {
+                htmlTabContents.js = content;
+                htmlTabContents.html = '';
+                htmlTabContents.css = '';
+            } else {
+                // For non-HTML languages, set directly to editor
+                if (editor) {
+                    editor.setValue(content);
+                }
+            }
+            
+            const langSelect = document.getElementById('language-select');
+            langSelect.value = detectedLang;
+            changeLanguage();
+            updateStatus(`📂 Imported: ${file.name}`, "#007acc");
+        } else {
+            // Unknown extension, just set content
+            if (editor) {
+                editor.setValue(content);
+            }
+            updateStatus(`📂 Imported: ${file.name} (Unknown extension)`, "#e2c044");
+        }
+    };
+    
+    reader.readAsText(file);
+    
+    // Reset file input
+    event.target.value = '';
+}
+
+// localStorage Functions
+function saveToLocalStorage() {
+    if (!editor) return;
+    
+    const code = editor.getValue();
+    const selectedLang = document.getElementById('language-select').value;
+    const selectedTheme = document.getElementById('theme-select').value;
+    const selectedFontSize = document.getElementById('font-size-select').value;
+    
+    try {
+        localStorage.setItem('vibecode_code', code);
+        localStorage.setItem('vibecode_language', selectedLang);
+        localStorage.setItem('vibecode_theme', selectedTheme);
+        localStorage.setItem('vibecode_fontsize', selectedFontSize);
+    } catch (e) {
+        console.warn('localStorage save failed:', e);
+    }
+}
+
+function loadFromLocalStorage() {
+    try {
+        const savedCode = localStorage.getItem('vibecode_code');
+        const savedLang = localStorage.getItem('vibecode_language');
+        const savedTheme = localStorage.getItem('vibecode_theme');
+        const savedFontSize = localStorage.getItem('vibecode_fontsize');
+        
+        if (savedLang) {
+            const langSelect = document.getElementById('language-select');
+            langSelect.value = savedLang;
+        }
+        
+        if (savedTheme) {
+            const themeSelect = document.getElementById('theme-select');
+            themeSelect.value = savedTheme;
+        }
+        
+        if (savedFontSize) {
+            const fontSizeSelect = document.getElementById('font-size-select');
+            fontSizeSelect.value = savedFontSize;
+        }
+        
+        return savedCode;
+    } catch (e) {
+        console.warn('localStorage load failed:', e);
+        return null;
+    }
+}
+
+// Theme Switching Function
+function changeTheme() {
+    if (!editor) return;
+    
+    const selectedTheme = document.getElementById('theme-select').value;
+    
+    // Update Monaco Editor theme
+    monaco.editor.setTheme(selectedTheme);
+    
+    // Update page body class for CSS theme styling
+    document.body.className = '';
+    if (selectedTheme === 'vs-light') {
+        document.body.classList.add('theme-vs-light');
+    } else if (selectedTheme === 'hc-black') {
+        document.body.classList.add('theme-hc-black');
+    }
+    
+    // Save to localStorage
+    saveToLocalStorage();
+    
+    updateStatus(`🎨 Theme: ${selectedTheme}`, "#007acc");
+}
+
+// Font Size Changing Function
+function changeFontSize() {
+    if (!editor) return;
+    
+    const selectedSize = parseInt(document.getElementById('font-size-select').value);
+    
+    // Update Monaco Editor font size
+    editor.updateOptions({
+        fontSize: selectedSize
+    });
+    
+    // Save to localStorage
+    saveToLocalStorage();
+    
+    updateStatus(`🔤 Font Size: ${selectedSize}px`, "#007acc");
+}
+
+// Code Formatting Function
+function formatCode() {
+    if (!editor) return;
+    
+    try {
+        // Try to use Monaco's built-in format action
+        const action = editor.getAction('editor.action.formatDocument');
+        if (action) {
+            action.run();
+            updateStatus("✨ Code Formatted", "#007acc");
+        } else {
+            // Fallback: simple auto-indent
+            const code = editor.getValue();
+            const formattedCode = simpleAutoIndent(code);
+            editor.setValue(formattedCode);
+            updateStatus("✨ Code Auto-Indented", "#007acc");
+        }
+    } catch (e) {
+        // Fallback to simple auto-indent
+        const code = editor.getValue();
+        const formattedCode = simpleAutoIndent(code);
+        editor.setValue(formattedCode);
+        updateStatus("✨ Code Auto-Indented", "#007acc");
+    }
+    
+    // Save to localStorage after formatting
+    saveToLocalStorage();
+}
+
+// Simple auto-indent helper function
+function simpleAutoIndent(code) {
+    const lines = code.split('\n');
+    let indentLevel = 0;
+    const indentSize = 4;
+    
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim();
+        
+        // Decrease indent for closing braces
+        if (line.startsWith('}') || line.startsWith(']') || line.startsWith(')')) {
+            indentLevel = Math.max(0, indentLevel - 1);
+        }
+        
+        // Apply current indent
+        if (line.length > 0) {
+            lines[i] = ' '.repeat(indentLevel * indentSize) + line;
+        }
+        
+        // Increase indent for opening braces
+        if (line.endsWith('{') || line.endsWith('[') || line.endsWith('(')) {
+            indentLevel++;
+        }
+    }
+    
+    return lines.join('\n');
+}
+
+// Share Code Function
+function shareCode() {
+    if (!editor) return;
+    
+    const code = editor.getValue();
+    const selectedLang = document.getElementById('language-select').value;
+    
+    // Create shareable data object
+    const shareData = {
+        code: code,
+        lang: selectedLang
+    };
+    
+    // Encode to Base64
+    const encodedData = btoa(JSON.stringify(shareData));
+    
+    // Create shareable URL
+    const shareUrl = `${window.location.origin}${window.location.pathname}#code=${encodedData}`;
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(shareUrl).then(() => {
+        updateStatus("🔗 Share Link Copied!", "#007acc");
+        logTerminal("🔗 Shareable URL copied to clipboard:\n" + shareUrl);
+    }).catch(err => {
+        updateStatus("❌ Copy Failed", "#cd3131");
+        logTerminal("❌ Failed to copy to clipboard: " + err.message);
+    });
+}
+
+// Load Shared Code from URL Hash
+function loadSharedCode() {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#code=')) {
+        try {
+            const encodedData = hash.substring(6); // Remove '#code='
+            const decodedData = JSON.parse(atob(encodedData));
+            
+            if (decodedData.code && decodedData.lang) {
+                // Set language
+                const langSelect = document.getElementById('language-select');
+                langSelect.value = decodedData.lang;
+                
+                // Set code after editor is ready
+                if (editor) {
+                    editor.setValue(decodedData.code);
+                    changeLanguage();
+                    updateStatus("📥 Shared Code Loaded", "#007acc");
+                    logTerminal("📥 Shared code loaded successfully!");
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to load shared code:', e);
+        }
+    }
+}
+
+// HTML Multi-Tab Functions
+function switchHtmlTab(tabName) {
+    if (!editor) return;
+    
+    // Save current tab content
+    htmlTabContents[currentHtmlTab] = editor.getValue();
+    
+    // Update current tab
+    currentHtmlTab = tabName;
+    
+    // Update tab UI
+    document.querySelectorAll('.html-tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.dataset.tab === tabName) {
+            tab.classList.add('active');
+        }
+    });
+    
+    // Load new tab content
+    editor.setValue(htmlTabContents[tabName] || '');
+    
+    // Update Monaco Editor language mode
+    let monacoLang = 'html';
+    if (tabName === 'css') monacoLang = 'css';
+    if (tabName === 'js') monacoLang = 'javascript';
+    monaco.editor.setModelLanguage(editor.getModel(), monacoLang);
+    
+    // Save to localStorage
+    saveToLocalStorage();
+}
+
+function bundleHtmlCode() {
+    const htmlContent = htmlTabContents.html || '';
+    const cssContent = htmlTabContents.css || '';
+    const jsContent = htmlTabContents.js || '';
+    
+    let bundledCode = htmlContent;
+    
+    // Inject CSS if present
+    if (cssContent.trim()) {
+        if (bundledCode.includes('<head>')) {
+            bundledCode = bundledCode.replace('<head>', `<head>\n  <style>\n${cssContent}\n  </style>`);
+        } else if (bundledCode.includes('<html>')) {
+            bundledCode = bundledCode.replace('<html>', `<html>\n<head>\n  <style>\n${cssContent}\n  </style>\n</head>`);
+        } else {
+            bundledCode = `<head>\n  <style>\n${cssContent}\n  </style>\n</head>\n` + bundledCode;
+        }
+    }
+    
+    // Inject JS if present
+    if (jsContent.trim()) {
+        if (bundledCode.includes('</body>')) {
+            bundledCode = bundledCode.replace('</body>', `  <script>\n${jsContent}\n  </script>\n</body>`);
+        } else if (bundledCode.includes('</html>')) {
+            bundledCode = bundledCode.replace('</html>', `  <script>\n${jsContent}\n  </script>\n</html>`);
+        } else {
+            bundledCode = bundledCode + `\n  <script>\n${jsContent}\n  </script>`;
+        }
+    }
+    
+    return bundledCode;
+}
+
 // 1. Initialize Monaco Editor
 require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs' } });
 
 require(['vs/editor/editor.main'], function () {
+    // Try to load saved code from localStorage
+    const savedCode = loadFromLocalStorage();
+    const initialCode = savedCode || codeTemplates.python;
+    
+    // Get the language from localStorage or default to python
+    const savedLang = localStorage.getItem('vibecode_language');
+    const initialLang = savedLang || 'python';
+    
+    // Get the theme from localStorage or default to vs-dark
+    const savedTheme = localStorage.getItem('vibecode_theme');
+    const initialTheme = savedTheme || 'vs-dark';
+    
+    // Get the font size from localStorage or default to 14
+    const savedFontSize = localStorage.getItem('vibecode_fontsize');
+    const initialFontSize = savedFontSize ? parseInt(savedFontSize) : 14;
+    
+    // Update language selector if saved language exists
+    if (savedLang) {
+        const langSelect = document.getElementById('language-select');
+        if (langSelect) langSelect.value = savedLang;
+    }
+    
+    // Apply initial theme to page body
+    if (initialTheme === 'vs-light') {
+        document.body.classList.add('theme-vs-light');
+    } else if (initialTheme === 'hc-black') {
+        document.body.classList.add('theme-hc-black');
+    }
+    
     editor = monaco.editor.create(document.getElementById('editor'), {
-        value: codeTemplates.python,
-        language: 'python',
-        theme: 'vs-dark',
+        value: initialCode,
+        language: initialLang,
+        theme: initialTheme,
         automaticLayout: true,
-        fontSize: 14,
+        fontSize: initialFontSize,
         minimap: { enabled: true }
     });
 
@@ -61,6 +462,9 @@ require(['vs/editor/editor.main'], function () {
     // Auto-run event listener on typing
     editor.onDidChangeModelContent(() => {
         if (isSwitchingLanguage) return;
+        
+        // Auto-save to localStorage on every change
+        saveToLocalStorage();
         
         updateStatus("✍️ Typing...", "#e2c044");
         clearTimeout(debounceTimer);
@@ -71,6 +475,8 @@ require(['vs/editor/editor.main'], function () {
 
     // Run initial code once editor is ready
     setTimeout(() => {
+        // Load shared code from URL hash if present
+        loadSharedCode();
         runCode();
     }, 200);
 });
@@ -112,6 +518,7 @@ function changeLanguage() {
     const outputTerminal = document.getElementById('output');
     const webPreview = document.getElementById('web-preview');
     const outputTitle = document.getElementById('output-title');
+    const htmlTabs = document.getElementById('html-tabs');
 
     langTag.innerText = selectedLang.toUpperCase();
 
@@ -120,8 +527,25 @@ function changeLanguage() {
     if (selectedLang === 'html') monacoLang = 'html';
     monaco.editor.setModelLanguage(editor.getModel(), monacoLang);
 
-    // Set Code Template
-    editor.setValue(codeTemplates[selectedLang] || "");
+    // Toggle HTML multi-tab visibility
+    if (selectedLang === 'html') {
+        htmlTabs.style.display = 'flex';
+        // Initialize HTML tabs with template only if completely empty
+        if (!htmlTabContents.html && !htmlTabContents.css && !htmlTabContents.js) {
+            htmlTabContents.html = codeTemplates.html;
+            htmlTabContents.css = '';
+            htmlTabContents.js = '';
+        }
+        // Switch to HTML tab
+        switchHtmlTab('html');
+    } else {
+        htmlTabs.style.display = 'none';
+        // Set Code Template for non-HTML languages
+        editor.setValue(codeTemplates[selectedLang] || "");
+    }
+
+    // Save to localStorage after language change
+    saveToLocalStorage();
 
     // Toggle View: HTML gets iFrame preview, others get Text Terminal
     if (selectedLang === 'html') {
@@ -146,18 +570,32 @@ async function runCode() {
 
     const selectedLang = document.getElementById('language-select').value;
     const code = editor.getValue();
+    
+    // Start benchmark timer
+    const startTime = performance.now();
 
     // Engine 1: HTML / CSS Live iFrame Canvas
     if (selectedLang === 'html') {
+        // Save current tab content before bundling
+        htmlTabContents[currentHtmlTab] = code;
+        
+        // Bundle all HTML tabs
+        const bundledCode = bundleHtmlCode();
+        
         const iframe = document.getElementById('web-preview');
         try {
             const doc = iframe.contentDocument || iframe.contentWindow.document;
             doc.open();
-            doc.write(code);
+            doc.write(bundledCode);
             doc.close();
-            updateStatus("🟢 HTML Rendered Live", "#007acc");
+            const endTime = performance.now();
+            const executionTime = (endTime - startTime).toFixed(2);
+            updateStatus(`🟢 HTML Rendered Live (${executionTime}ms)`, "#007acc");
         } catch (e) {
-            iframe.srcdoc = code;
+            iframe.srcdoc = bundledCode;
+            const endTime = performance.now();
+            const executionTime = (endTime - startTime).toFixed(2);
+            updateStatus(`🟢 HTML Rendered Live (${executionTime}ms)`, "#007acc");
         }
         return;
     }
@@ -178,7 +616,9 @@ sys.stdout = io.StringIO()
             await pyodide.runPythonAsync(code);
             let stdout = pyodide.runPython("sys.stdout.getvalue()");
             logTerminal(stdout || "Executed successfully (no print output).");
-            updateStatus("🟢 Python WASM Success", "#007acc");
+            const endTime = performance.now();
+            const executionTime = (endTime - startTime).toFixed(2);
+            updateStatus(`🟢 Python WASM Success (${executionTime}ms)`, "#007acc");
         } catch (err) {
             logTerminal(`❌ Python Error:\n${err.message}`);
             updateStatus("🔴 Execution Error", "#cd3131");
@@ -190,6 +630,9 @@ sys.stdout = io.StringIO()
     if (selectedLang === 'javascript') {
         updateStatus("⚡ Running JavaScript (Browser)...", "#007acc");
         executeClientJS(code);
+        const endTime = performance.now();
+        const executionTime = (endTime - startTime).toFixed(2);
+        updateStatus(`🟢 JS Success (${executionTime}ms)`, "#007acc");
         return;
     }
 
@@ -197,6 +640,9 @@ sys.stdout = io.StringIO()
     if (selectedLang === 'cpp') {
         updateStatus("⚡ Running C++ (Browser Engine)...", "#007acc");
         executeClientCpp(code);
+        const endTime = performance.now();
+        const executionTime = (endTime - startTime).toFixed(2);
+        updateStatus(`🟢 C++ Engine Success (${executionTime}ms)`, "#007acc");
         return;
     }
 
@@ -204,6 +650,9 @@ sys.stdout = io.StringIO()
     if (selectedLang === 'java') {
         updateStatus("⚡ Running Java (Browser Engine)...", "#007acc");
         executeClientJava(code);
+        const endTime = performance.now();
+        const executionTime = (endTime - startTime).toFixed(2);
+        updateStatus(`🟢 Java Engine Success (${executionTime}ms)`, "#007acc");
         return;
     }
 }
@@ -252,7 +701,18 @@ function executeClientCpp(code) {
 
         clean = clean.replace(/\b(?:int|double|float|std::string|string|bool|auto)\s+/g, "let ");
 
+        // Handle std::cout first
         clean = clean.replace(/std::cout\s*<<\s*([\s\S]*?);/g, function(match, body) {
+            let parts = body.split("<<").map(p => {
+                let trimmed = p.trim();
+                if (trimmed === "std::endl" || trimmed === "endl") return '"\\n"';
+                return trimmed;
+            });
+            return `__cout(${parts.join(", ")});`;
+        });
+
+        // Handle plain cout (after using namespace std is removed)
+        clean = clean.replace(/\bcout\s*<<\s*([\s\S]*?);/g, function(match, body) {
             let parts = body.split("<<").map(p => {
                 let trimmed = p.trim();
                 if (trimmed === "std::endl" || trimmed === "endl") return '"\\n"';
