@@ -1,4 +1,3 @@
-Apni style.css file mein yeh naye styles end mein add karein (ya poori file replace kar lein):
 * {
     box-sizing: border-box;
     margin: 0;
@@ -6,21 +5,50 @@ Apni style.css file mein yeh naye styles end mein add karein (ya poori file repl
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-body {
+html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
     background-color: #1e1e1e;
     color: #ffffff;
-    height: 100vh;
+}
+
+body {
     display: flex;
     flex-direction: column;
 }
 
 .navbar {
+    height: 50px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 8px 20px;
     background-color: #252526;
     border-bottom: 1px solid #333;
+}
+
+.language-picker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #cccccc;
+}
+
+#language-select {
+    background-color: #3c3c3c;
+    color: #ffffff;
+    border: 1px solid #555;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+}
+
+#language-select:focus {
+    border-color: #007acc;
 }
 
 .header-actions {
@@ -58,16 +86,22 @@ body {
     display: flex;
     flex: 1;
     height: calc(100vh - 75px);
+    width: 100%;
+    overflow: hidden;
 }
 
 .editor-box, .output-box {
     flex: 1;
     display: flex;
     flex-direction: column;
+    height: 100%;
+    width: 50%;
     border-right: 1px solid #333;
+    overflow: hidden;
 }
 
 .box-header {
+    height: 30px;
     background-color: #2d2d2d;
     padding: 6px 15px;
     font-size: 12px;
@@ -85,6 +119,7 @@ body {
     background: #1e1e1e;
     padding: 2px 6px;
     border-radius: 3px;
+    font-weight: bold;
 }
 
 .clear-btn {
@@ -104,10 +139,14 @@ body {
 
 #editor {
     flex: 1;
+    width: 100%;
+    height: calc(100% - 30px);
+    min-height: 350px;
 }
 
 #output {
     flex: 1;
+    height: calc(100% - 30px);
     padding: 15px;
     background-color: #181818;
     color: #00ff66;
@@ -117,9 +156,16 @@ body {
     white-space: pre-wrap;
 }
 
-/* Status Bar Style */
+#web-preview {
+    flex: 1;
+    width: 100%;
+    height: calc(100% - 30px);
+    border: none;
+    background-color: #ffffff;
+}
+
 .status-bar {
-    height: 22px;
+    height: 25px;
     background-color: #007acc;
     color: white;
     font-size: 12px;

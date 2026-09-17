@@ -3,48 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VibeCode - Live Python Online Editor</title>
+    <title>VibeCode - Universal Multi-Language Studio</title>
     <link rel="stylesheet" href="style.css">
     
-    <!-- 1. Monaco Editor CDN -->
+    <!-- Monaco Editor CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.min.js"></script>
 
-    <!-- 2. Pyodide WASM CDN -->
+    <!-- Pyodide WASM CDN -->
     <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
 </head>
 <body>
     <header class="navbar">
-        <h2>⚡ VibeCode Python Studio</h2>
+        <h2>⚡ VibeCode Studio</h2>
+
+        <!-- Language Selector Dropdown -->
+        <div class="language-picker">
+            <label for="language-select">Select Language:</label>
+            <select id="language-select" onchange="changeLanguage()">
+                <option value="python">🐍 Python 3.14 (WASM)</option>
+                <option value="html">🌐 HTML / CSS / JS (Live Preview)</option>
+                <option value="cpp">⚡ C++ (Browser Engine)</option>
+                <option value="java">☕ Java (Browser Engine)</option>
+                <option value="javascript">📜 JavaScript (Native Engine)</option>
+            </select>
+        </div>
+
         <div class="header-actions">
             <span id="auto-status" class="badge">⚡ Auto-Run: ON</span>
-            <button id="run-btn" onclick="runPythonCode()">▶ Manual Run</button>
+            <button id="run-btn" onclick="runCode()">▶ Manual Run</button>
         </div>
     </header>
 
     <main class="container">
-        <!-- Editor Box -->
+        <!-- Code Editor Box -->
         <div class="editor-box">
             <div class="box-header">
-                <span>Python Source Code</span>
-                <span class="lang-tag">Python 3.14</span>
+                <span>Source Code</span>
+                <span id="lang-tag" class="lang-tag">PYTHON</span>
             </div>
             <div id="editor"></div>
         </div>
 
-        <!-- Terminal Box -->
+        <!-- Output Box (Terminal + iFrame Web Preview) -->
         <div class="output-box">
             <div class="box-header">
-                <span>Live Output Terminal</span>
-                <button class="clear-btn" onclick="clearTerminal()">🧹 Clear Terminal</button>
+                <span id="output-title">Live Terminal Output</span>
+                <button class="clear-btn" onclick="clearTerminal()">🧹 Clear</button>
             </div>
-            <pre id="output">Step 1: HTML Page Loaded. Initializing Scripts...</pre>
+            
+            <!-- Output Mode 1: Text Terminal -->
+            <pre id="output">🟢 Initializing VibeCode Studio...</pre>
+
+            <!-- Output Mode 2: iFrame Live Web Preview -->
+            <iframe id="web-preview" style="display: none;" sandbox="allow-scripts allow-modals"></iframe>
         </div>
     </main>
 
-    <!-- Status Bar -->
+    <!-- Bottom Status Bar -->
     <footer class="status-bar">
-        <span id="status-text">🟡 Starting Setup...</span>
-        <span>UTF-8 | WebAssembly</span>
+        <span id="status-text">🟡 Loading Editor & Engine...</span>
+        <span id="engine-info">Engine: Client-Side In-Browser Engine</span>
     </footer>
 
     <script src="app.js"></script>
