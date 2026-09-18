@@ -25,7 +25,15 @@ const codeTemplates = {
 // UI Helpers
 function logTerminal(msg) {
     const outputElement = document.getElementById('output');
-    if (outputElement) outputElement.innerText = msg;
+    if (outputElement) {
+        // Check if message contains an error
+        if (isErrorOutput(msg)) {
+            // Create error message with explain button
+            outputElement.innerHTML = msg + '\n\n<button class="explain-btn" onclick="explainError(\'' + msg.replace(/'/g, "\\'") + '\')">💡 Explain Error</button>';
+        } else {
+            outputElement.innerText = msg;
+        }
+    }
 }
 
 function updateStatus(text, bgColor) {
@@ -413,6 +421,129 @@ function bundleHtmlCode() {
     }
     
     return bundledCode;
+}
+
+// Error Explanation Functions
+function closeErrorModal() {
+    document.getElementById('error-modal').style.display = 'none';
+}
+
+function explainError(errorMessage) {
+    const explanation = generateErrorExplanation(errorMessage);
+    
+    document.getElementById('error-what').textContent = explanation.what;
+    document.getElementById('error-why').textContent = explanation.why;
+    document.getElementById('error-fix').textContent = explanation.fix;
+    
+    document.getElementById('error-modal').style.display = 'flex';
+}
+
+function generateErrorExplanation(errorMessage) {
+    const error = errorMessage.toLowerCase();
+    
+    // Python Errors
+    if (error.includes('syntaxerror')) {
+        return {
+            what: 'Syntax Error - Your Python code has invalid syntax.',
+            why: 'Python could not parse your code. This usually happens due to missing colons, incorrect indentation, or unmatched parentheses.',
+            fix: '# Check for:\n# - Missing colons after if/for/while/def\n# - Incorrect indentation (use 4 spaces)\n# - Unmatched parentheses/brackets\n# - Missing quotes around strings\n\n# Example fix:\nif True:\n    print("Hello")  # Correct indentation'
+        };
+    }
+    
+    if (error.includes('nameerror') || error.includes('is not defined')) {
+        return {
+            what: 'NameError - A variable or function is used before being defined.',
+            why: 'You tried to use a variable or function that hasn\'t been declared or is out of scope.',
+            fix: '# Define variables before using them\nmy_var = 10\nprint(my_var)\n\n# Or check if variable exists\nif "my_var" in locals():\n    print(my_var)'
+        };
+    }
+    
+    if (error.includes('typeerror')) {
+        return {
+            what: 'TypeError - An operation was performed on an incompatible data type.',
+            why: 'You tried to use an operation or function on the wrong type of data (e.g., adding a string to a number).',
+            fix: '# Convert types before operations\nnum = 10\ntext = "5"\nresult = num + int(text)  # Convert string to int\nprint(result)'
+        };
+    }
+    
+    if (error.includes('indentationerror')) {
+        return {
+            what: 'IndentationError - Incorrect indentation in Python code.',
+            why: 'Python uses indentation to define code blocks. Mixed tabs and spaces or inconsistent spacing causes this error.',
+            fix: '# Use consistent 4-space indentation\ndef my_function():\n    if True:\n        print("Correct indentation")\n    return True'
+        };
+    }
+    
+    // JavaScript Errors
+    if (error.includes('syntaxerror') && error.includes('javascript')) {
+        return {
+            what: 'Syntax Error - Your JavaScript code has invalid syntax.',
+            why: 'The JavaScript parser encountered code it couldn\'t understand. Common causes: missing brackets, semicolons, or quotes.',
+            fix: '// Check for:\n// - Missing closing brackets/parentheses\n// - Missing semicolons\n// - Unmatched quotes\n\n// Example fix:\nfunction greet() {\n    console.log("Hello");\n}'
+        };
+    }
+    
+    if (error.includes('referenceerror') || (error.includes('is not defined') && error.includes('javascript'))) {
+        return {
+            what: 'ReferenceError - A variable is being referenced that hasn\'t been declared.',
+            why: 'You tried to use a variable that doesn\'t exist in the current scope.',
+            fix: '// Declare variables before use\nlet myVar = 10;\nconsole.log(myVar);\n\n// Or use const for constants\nconst PI = 3.14;'
+        };
+    }
+    
+    if (error.includes('typeerror') && error.includes('javascript')) {
+        return {
+            what: 'TypeError - An operation was performed on the wrong data type.',
+            why: 'You tried to use a value in a way that doesn\'t match its type (e.g., calling a non-function as a function).',
+            fix: '// Check types before operations\nlet num = 10;\nlet str = "5";\nlet result = num + Number(str); // Convert string to number\nconsole.log(result);'
+        };
+    }
+    
+    // C++ Errors
+    if (error.includes('cout is not defined') || error.includes('__cout')) {
+        return {
+            what: 'C++ cout Error - The cout statement could not be transpiled.',
+            why: 'The C++ transpiler failed to convert the cout statement to JavaScript. This may be due to complex cout expressions.',
+            fix: '// Use simple cout statements:\n#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello" << endl;\n    int x = 5;\n    cout << x << endl;\n    return 0;\n}'
+        };
+    }
+    
+    if (error.includes('c++') && error.includes('error')) {
+        return {
+            what: 'C++ Transpilation Error - The C++ code could not be converted to JavaScript.',
+            why: 'The C++ transpiler encountered syntax it couldn\'t handle. This may be due to advanced C++ features not supported in the browser engine.',
+            fix: '// Use basic C++ syntax:\n// - Simple types: int, double, string, bool\n// - Basic functions\n// - cout for output\n// Avoid: templates, advanced STL, pointers\n\nint main() {\n    int a = 5;\n    cout << a << endl;\n    return 0;\n}'
+        };
+    }
+    
+    // Java Errors
+    if (error.includes('java') && error.includes('error')) {
+        return {
+            what: 'Java Transpilation Error - The Java code could not be converted to JavaScript.',
+            why: 'The Java transpiler encountered syntax it couldn\'t handle. This may be due to advanced Java features not supported.',
+            fix: '// Use basic Java syntax:\n// - Simple types: int, double, String, boolean\n// - Basic methods\n// - System.out.println for output\n// Avoid: advanced OOP, generics, complex libraries\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello");\n    }\n}'
+        };
+    }
+    
+    // Generic Error
+    return {
+        what: 'Execution Error - An error occurred while running your code.',
+        why: 'The code execution failed. Check the error message for specific details about what went wrong.',
+        fix: '// General debugging tips:\n// 1. Check for syntax errors\n// 2. Verify variable names are correct\n// 3. Ensure all brackets/parentheses are matched\n// 4. Check data types match operations\n// 5. Review the error message for line numbers'
+    };
+}
+
+function isErrorOutput(message) {
+    const errorKeywords = [
+        'error', 'Error', 'ERROR',
+        'exception', 'Exception', 'EXCEPTION',
+        'failed', 'Failed', 'FAILED',
+        'undefined', 'null',
+        'syntaxerror', 'referenceerror', 'typeerror',
+        'nameerror', 'indentationerror',
+        '❌'
+    ];
+    return errorKeywords.some(keyword => message.includes(keyword));
 }
 
 // 1. Initialize Monaco Editor

@@ -97,9 +97,36 @@
 
     <!-- Bottom Status Bar -->
     <footer class="status-bar">
-        <span id="status-text">🟡 Loading Editor & Engine...</span>
-        <span id="engine-info">Engine: Client-Side In-Browser Engine</span>
+        <span id="status-text">� Ready</span>
+        <span id="execution-time"></span>
     </footer>
+
+    <!-- Error Explanation Modal -->
+    <div id="error-modal" class="error-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>💡 Error Explanation</h2>
+                <button class="modal-close" onclick="closeErrorModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="error-section">
+                    <h3>❌ What Went Wrong</h3>
+                    <p id="error-what"></p>
+                </div>
+                <div class="error-section">
+                    <h3>🔍 Why It Happened</h3>
+                    <p id="error-why"></p>
+                </div>
+                <div class="error-section">
+                    <h3>✅ Suggested Fix</h3>
+                    <pre id="error-fix"></pre>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn" onclick="closeErrorModal()">Close</button>
+            </div>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>
